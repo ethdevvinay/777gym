@@ -13,10 +13,24 @@ header('Connection: close');
 
 $sn = trim($_GET['SN'] ?? $_GET['sn'] ?? '');
 
+$db = null;
 if (!empty($sn)) {
     try {
         $db = getDB();
         $db->prepare("UPDATE devices SET status = 'ONLINE', last_sync = NOW() WHERE serial_no = ?")->execute([$sn]);
+
+        // Check for pending device commands (e.g. Enroll Face, Enroll Fingerprint, Reboot, Sync User)
+        $cmdStmt = $db->prepare("SELECT id, command_text FROM device_commands WHERE device_serial = ? AND status = 'pending' ORDER BY id ASC LIMIT 1");
+        $cmdStmt->execute([$sn]);
+        $cmd = $cmdStmt->fetch();
+
+        if ($cmd) {
+            // Mark as sent
+            $db->prepare("UPDATE device_commands SET status = 'sent', sent_at = NOW() WHERE id = ?")->execute([$cmd['id']]);
+            // Return formatted ADMS command
+            echo "C:{$cmd['id']}:{$cmd['command_text']}";
+            exit;
+        }
     } catch (Exception $e) {}
 }
 

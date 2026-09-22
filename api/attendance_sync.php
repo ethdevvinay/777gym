@@ -27,6 +27,7 @@ $db     = getDB();
 // Ensure attendance table has checkout & duration columns
 try { $db->exec("ALTER TABLE `attendance` ADD COLUMN `check_out_time` DATETIME NULL AFTER `check_in_time`"); } catch(Exception $e) {}
 try { $db->exec("ALTER TABLE `attendance` ADD COLUMN `duration_minutes` INT DEFAULT NULL AFTER `check_out_time`"); } catch(Exception $e) {}
+try { $db->exec("ALTER TABLE `members` ADD COLUMN `photo_url` VARCHAR(255) NULL AFTER `phone`"); } catch(Exception $e) {}
 
 // =============================================================================
 if ($action === 'live_feed') {

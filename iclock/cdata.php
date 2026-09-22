@@ -272,6 +272,14 @@ if ($method === 'POST') {
             $member = $memStmt->fetch();
 
             if (!$member) {
+                // Log to Raw Biometric Transactions Audit
+                try {
+                    $db->prepare("
+                        INSERT INTO biometric_transactions (device_serial, biometric_user_id, entity_type, entity_id, punch_time, verify_type, raw_payload) 
+                        VALUES (?, ?, 'unknown', NULL, ?, ?, ?)
+                    ")->execute([$sn, $pin, $punchTime, $verifyMethod, $line]);
+                } catch (Exception $e) {}
+
                 // Log Unregistered Punch for Admin review
                 try {
                     $db->prepare("
@@ -283,6 +291,14 @@ if ($method === 'POST') {
                 $processedCount++;
                 continue;
             }
+
+            // Log to Raw Biometric Transactions Audit (Member)
+            try {
+                $db->prepare("
+                    INSERT INTO biometric_transactions (device_serial, biometric_user_id, entity_type, entity_id, punch_time, verify_type, raw_payload) 
+                    VALUES (?, ?, 'member', ?, ?, ?, ?)
+                ")->execute([$sn, $pin, $member['id'], $punchTime, $verifyMethod, $line]);
+            } catch (Exception $e) {}
 
             // ── C) DUPLICATE SCAN BUFFER CHECK ───────────────────────────────
             $dupChk = $db->prepare("SELECT id FROM attendance WHERE member_id = ? AND check_in_time >= DATE_SUB(?, INTERVAL ? MINUTE)");
