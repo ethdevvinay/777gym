@@ -1,0 +1,73 @@
+/* Dedicated Print CSS for Thermal Receipts (80mm/58mm) and A4 Tax Invoices */
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-receipt-container,
+  .print-receipt-container * {
+    visibility: visible;
+  }
+  
+  .print-receipt-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0 auto;
+    padding: 10px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    color: #000;
+    background: #fff;
+    line-height: 1.3;
+  }
+
+  .thermal-header {
+    text-align: center;
+    border-bottom: 1px dashed #000;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .thermal-title {
+    font-weight: bold;
+    font-size: 16px;
+    text-transform: uppercase;
+  }
+
+  .thermal-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+  }
+
+  .thermal-table th, 
+  .thermal-table td {
+    text-align: left;
+    padding: 3px 0;
+  }
+
+  .thermal-table .text-right {
+    text-align: right;
+  }
+
+  .thermal-divider {
+    border-top: 1px dashed #000;
+    margin: 8px 0;
+  }
+
+  .thermal-footer {
+    text-align: center;
+    font-size: 10px;
+    margin-top: 12px;
+  }
+
+  /* A4 Invoice Print Override */
+  .a4-invoice-container {
+    width: 100%;
+    padding: 20mm;
+    font-family: Arial, sans-serif;
+  }
+}

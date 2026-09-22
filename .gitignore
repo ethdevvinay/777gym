@@ -1,0 +1,18 @@
+# Environment & Secret files
+config/.env
+*.env
+*.env.*
+!config/.env.example
+
+# Node.js dependencies & Baileys session credentials
+node_modules/
+whatsapp_gateway/node_modules/
+whatsapp_gateway/auth_info/
+whatsapp_gateway/*.log
+baileys_store.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp

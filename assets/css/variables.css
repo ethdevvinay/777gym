@@ -1,0 +1,84 @@
+/* Centralized Enterprise CSS Variable Design System
+   Modern SaaS Light Theme Commercial Gym POS + ERP Software
+   Optimized for 100% Offline Fast Execution
+*/
+
+:root {
+  /* Color Palette - Commercial Clean Theme */
+  --bg-main: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-surface-secondary: #F1F5F9;
+  --bg-surface-hover: #E2E8F0;
+
+  --border-color: #E2E8F0;
+  --border-light: #F1F5F9;
+  --border-focus: #2563EB;
+
+  /* Typography Colors */
+  --text-primary: #0F172A;    /* Slate Dark 900 */
+  --text-secondary: #334155;  /* Slate 700 */
+  --text-muted: #64748B;      /* Slate 500 */
+  --text-inverse: #FFFFFF;
+
+  /* Configurable Brand Accent Colors */
+  --primary: #2563EB;         /* Deep Royal Blue */
+  --primary-hover: #1D4ED8;
+  --primary-light: #EFF6FF;
+  --primary-border: #BFDBFE;
+  --primary-glow: rgba(37, 99, 235, 0.25);
+
+  --success: #10B981;         /* Vibrant Emerald Green */
+  --success-hover: #059669;
+  --success-bg: #ECFDF5;
+  --success-border: #A7F3D0;
+  --success-glow: rgba(16, 185, 129, 0.25);
+
+  --warning: #F59E0B;         /* Vibrant Amber */
+  --warning-bg: #FFFBEB;
+  --warning-border: #FDE68A;
+  --warning-glow: rgba(245, 158, 11, 0.25);
+
+  --danger: #EF4444;          /* Vibrant Crimson Red */
+  --danger-bg: #FEF2F2;
+  --danger-border: #FECACA;
+  --danger-glow: rgba(239, 68, 68, 0.25);
+
+  --info: #0284C7;             /* Vibrant Azure / Pool */
+  --info-bg: #F0F9FF;
+  --info-border: #BAE6FD;
+
+  --purple: #8B5CF6;           /* Personal Training Accent */
+  --purple-bg: #F5F3FF;
+  --purple-border: #DDD6FE;
+
+  /* Layout Heights & Widths */
+  --header-height: 64px;
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+
+  /* Fonts */
+  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Touch & Sizing Standards */
+  --touch-target-min: 44px;
+  --touch-target-ideal: 48px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* Premium Glassmorphism Shadows */
+  --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --shadow-float: 0 14px 30px -4px rgba(15, 23, 42, 0.1), 0 6px 12px -2px rgba(15, 23, 42, 0.05);
+  --shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-bounce: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

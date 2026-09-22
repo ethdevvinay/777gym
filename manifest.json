@@ -1,0 +1,51 @@
+{
+  "name": "THE CLUB 777® GYM ERP & POS",
+  "short_name": "THE CLUB 777",
+  "description": "Commercial Enterprise Gym Management System with Touch POS, Members, Staff Payroll & Offline Support",
+  "start_url": "/GYM/index.php",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2563EB",
+  "orientation": "any",
+  "scope": "/GYM/",
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Touch POS",
+      "short_name": "POS",
+      "description": "Open Touch POS Terminal",
+      "url": "/GYM/index.php?page=pos",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Open Executive Dashboard",
+      "url": "/GYM/index.php?page=dashboard",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Members",
+      "short_name": "Members",
+      "description": "View All Members",
+      "url": "/GYM/index.php?page=members",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["business", "finance", "health"],
+  "screenshots": []
+}

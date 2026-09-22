@@ -1,0 +1,12 @@
+RewriteEngine On
+RewriteBase /iclock/
+
+# Direct mappings for ADMS endpoints
+RewriteRule ^cdata/?$ cdata.php [L,QSA]
+RewriteRule ^getrequest/?$ getrequest.php [L,QSA]
+RewriteRule ^devicecmd/?$ devicecmd.php [L,QSA]
+
+# Catch-all
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ cdata.php [L,QSA]
