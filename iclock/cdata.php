@@ -21,6 +21,10 @@ require_once __DIR__ . '/../config/database.php';
 header('Content-Type: text/plain; charset=utf-8');
 header('Connection: close');
 
+// Debug Logger: Log every machine hit
+$rawInput = file_get_contents('php://input');
+@file_put_contents(__DIR__ . '/adms_debug.log', date('Y-m-d H:i:s') . ' [' . ($_SERVER['REQUEST_METHOD'] ?? 'GET') . '] ' . ($_SERVER['REQUEST_URI'] ?? '') . ' - Body: ' . trim($rawInput) . "\n", FILE_APPEND);
+
 $db = getDB();
 
 // ── 1. Extract Query Parameters ──────────────────────────────────────────────
@@ -83,7 +87,7 @@ if ($method === 'GET') {
     if (!empty($options) || !empty($sn)) {
         // Standard ADMS initialization handshake response
         $response  = "GET_OPTION_FROM: {$sn}\n";
-        $response .= "Stamp=9999\n";
+        $response .= "Stamp=0\n"; // 0 tells machine to push all pending punches
         $response .= "OpStamp=0\n";
         $response .= "PhotoStamp=0\n";
         $response .= "ErrorDelay=30\n";

@@ -9,6 +9,8 @@ require_once __DIR__ . '/../config/database.php';
 header('Content-Type: text/plain; charset=utf-8');
 header('Connection: close');
 
+@file_put_contents(__DIR__ . '/adms_debug.log', date('Y-m-d H:i:s') . ' [GET-HEARTBEAT] ' . ($_SERVER['REQUEST_URI'] ?? '') . "\n", FILE_APPEND);
+
 $sn = trim($_GET['SN'] ?? $_GET['sn'] ?? '');
 
 if (!empty($sn)) {
