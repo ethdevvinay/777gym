@@ -3,12 +3,12 @@
    Full Offline Support: Cache-First Static + Network-First API
    ============================================================ */
 
-const CACHE_VERSION = 'gym-v8-offline-fast';
+const CACHE_VERSION = 'gym-v9-offline-complete';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const PAGES_CACHE   = `${CACHE_VERSION}-pages`;
 const API_CACHE     = `${CACHE_VERSION}-api`;
 
-/* All static assets to pre-cache on install */
+/* All static assets to pre-cache on install (100% Offline) */
 const STATIC_ASSETS = [
   'assets/css/variables.css',
   'assets/css/main.css',
@@ -20,6 +20,7 @@ const STATIC_ASSETS = [
   'assets/js/offline.js',
   'assets/js/scanner.js',
   'assets/js/chart.umd.min.js',
+  'logo.png',
   'manifest.json'
 ];
 
@@ -76,8 +77,8 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   if (url.origin !== location.origin) return;
 
-  // CSS / JS / Fonts — Network First with Cache Fallback for instant live updates
-  if (url.pathname.startsWith('/GYM/assets/') || url.pathname.includes('fonts.googleapis') || url.pathname.includes('fonts.gstatic')) {
+  // CSS / JS / Fonts / Images — Network First with Cache Fallback for instant live updates
+  if (url.pathname.includes('/assets/') || url.pathname.includes('logo.png') || url.pathname.includes('fonts.googleapis') || url.pathname.includes('fonts.gstatic')) {
     event.respondWith(networkFirstWithCache(request, STATIC_CACHE));
     return;
   }
@@ -164,10 +165,9 @@ function offlineFallbackPage() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FITZONE GYM — Offline Mode</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #0F172A;
       color: #F8FAFC;
       display: flex;

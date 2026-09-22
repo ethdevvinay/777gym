@@ -185,7 +185,8 @@ $gymName = getSetting('gym_name', 'THE CLUB 777®');
     // ── Register Service Worker ──────────────────────────────
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js', { scope: '/GYM/' })
+        const swScope = window.location.pathname.startsWith('/GYM') ? '/GYM/' : './';
+        navigator.serviceWorker.register('sw.js', { scope: swScope })
           .then(reg => { reg.update(); })
           .catch(() => {});
       });
