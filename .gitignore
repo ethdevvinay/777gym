@@ -11,6 +11,10 @@ whatsapp_gateway/auth_info/
 whatsapp_gateway/*.log
 baileys_store.json
 
+# Generated Reports & Invoices
+reports/invoices/*.pdf
+reports/daily_excel/*.xls
+
 # OS & Archives
 .DS_Store
 Thumbs.db
