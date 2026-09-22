@@ -155,6 +155,15 @@ if ($method === 'POST') {
                 $verifyCode = 1;
             }
 
+            // Timezone Drift Safeguard:
+            // If machine clock is set to UTC or drifted > 45 minutes, use current IST time
+            // so today's live punches never get filed under yesterday.
+            $nowTs = time();
+            $parsedTs = strtotime($punchTime);
+            if (!$parsedTs || abs($nowTs - $parsedTs) > 2700) {
+                $punchTime = date('Y-m-d H:i:s', $nowTs);
+            }
+
             // Map verify code to method (15=Face, 1=Fingerprint, 4=Card, 2=Password)
             $verifyMethod = 'biometric';
             if ($verifyCode == 15 || $verifyCode == 'face') {
@@ -163,15 +172,38 @@ if ($method === 'POST') {
                 $verifyMethod = 'rfid';
             }
 
+            // ── SMART PIN RESOLUTION (Handles 101, STF-101, BIO-101, M-101, 00101) ──
+            $cleanPin = preg_replace('/^(STF|BIO|MEM|M)[\-_]?/i', '', $pin);
+            $pinVariants = [$pin];
+            if (!empty($cleanPin)) {
+                $pinVariants[] = $cleanPin;
+                $pinVariants[] = 'BIO-' . $cleanPin;
+                $pinVariants[] = 'STF-' . $cleanPin;
+                $pinVariants[] = 'M-' . $cleanPin;
+                $ltrimPin = ltrim($cleanPin, '0');
+                if (!empty($ltrimPin)) {
+                    $pinVariants[] = $ltrimPin;
+                    $pinVariants[] = 'BIO-' . $ltrimPin;
+                    $pinVariants[] = 'STF-' . $ltrimPin;
+                    $pinVariants[] = 'M-' . $ltrimPin;
+                }
+            }
+            $pinVariants = array_values(array_unique(array_filter($pinVariants)));
+            $inPlaceholders = implode(',', array_fill(0, count($pinVariants), '?'));
+            $numericPin = intval($cleanPin);
+
             // ── A) CHECK IF PIN MATCHES STAFF ────────────────────────────────
-            $staffStmt = $db->prepare("
+            $staffSql = "
                 SELECT s.*, sh.name as shift_name, sh.start_time as shift_start, sh.end_time as shift_end,
                        sh.grace_period_mins, sh.half_day_threshold_mins 
                 FROM staff s 
                 LEFT JOIN staff_shifts sh ON s.shift_id = sh.id 
-                WHERE s.biometric_id = ? OR s.phone = ? OR s.id = ?
-            ");
-            $staffStmt->execute([$pin, $pin, intval($pin)]);
+                WHERE s.biometric_id IN ({$inPlaceholders}) OR s.phone = ? OR s.id = ?
+                LIMIT 1
+            ";
+            $staffStmt = $db->prepare($staffSql);
+            $staffParams = array_merge($pinVariants, [$pin, $numericPin]);
+            $staffStmt->execute($staffParams);
             $staff = $staffStmt->fetch();
 
             if ($staff) {
@@ -222,8 +254,17 @@ if ($method === 'POST') {
             }
 
             // ── B) CHECK IF PIN MATCHES GYM MEMBER ───────────────────────────
-            $memStmt = $db->prepare("SELECT * FROM members WHERE biometric_id = ? OR member_code = ? OR phone = ? OR id = ?");
-            $memStmt->execute([$pin, $pin, $pin, intval($pin)]);
+            $memSql = "
+                SELECT * FROM members 
+                WHERE biometric_id IN ({$inPlaceholders}) 
+                   OR member_code IN ({$inPlaceholders}) 
+                   OR phone = ? 
+                   OR id = ? 
+                LIMIT 1
+            ";
+            $memStmt = $db->prepare($memSql);
+            $memParams = array_merge($pinVariants, $pinVariants, [$pin, $numericPin]);
+            $memStmt->execute($memParams);
             $member = $memStmt->fetch();
 
             if (!$member) {

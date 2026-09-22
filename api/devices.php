@@ -160,15 +160,38 @@ if ($action === 'list') {
         exit;
     }
 
+    // ── SMART BIO-ID RESOLUTION (Handles 1001, BIO-1001, STF-101, 101, etc.) ──
+    $cleanBio = preg_replace('/^(STF|BIO|MEM|M)[\-_]?/i', '', $bioId);
+    $bioVariants = [$bioId];
+    if (!empty($cleanBio)) {
+        $bioVariants[] = $cleanBio;
+        $bioVariants[] = 'BIO-' . $cleanBio;
+        $bioVariants[] = 'STF-' . $cleanBio;
+        $bioVariants[] = 'M-' . $cleanBio;
+        $ltrimBio = ltrim($cleanBio, '0');
+        if (!empty($ltrimBio)) {
+            $bioVariants[] = $ltrimBio;
+            $bioVariants[] = 'BIO-' . $ltrimBio;
+            $bioVariants[] = 'STF-' . $ltrimBio;
+            $bioVariants[] = 'M-' . $ltrimBio;
+        }
+    }
+    $bioVariants = array_values(array_unique(array_filter($bioVariants)));
+    $inPlaceholders = implode(',', array_fill(0, count($bioVariants), '?'));
+    $numericBio = intval($cleanBio);
+
     // ── STEP 1: Check if this is a STAFF member ────────────────────────────
-    $staffStmt = $db->prepare("
+    $staffSql = "
         SELECT s.*, sh.name as shift_name, sh.start_time as shift_start, sh.end_time as shift_end, 
                sh.grace_period_mins, sh.half_day_threshold_mins 
         FROM staff s 
         LEFT JOIN staff_shifts sh ON s.shift_id = sh.id 
-        WHERE s.biometric_id = ? OR s.phone = ?
-    ");
-    $staffStmt->execute([$bioId, $bioId]);
+        WHERE s.biometric_id IN ({$inPlaceholders}) OR s.phone = ? OR s.id = ?
+        LIMIT 1
+    ";
+    $staffStmt = $db->prepare($staffSql);
+    $staffParams = array_merge($bioVariants, [$bioId, $numericBio]);
+    $staffStmt->execute($staffParams);
     $staff = $staffStmt->fetch();
 
     if ($staff) {
@@ -237,8 +260,17 @@ if ($action === 'list') {
     }
 
     // ── STEP 2: Match MEMBER by biometric_id, member_code, phone, or id ───
-    $stmt = $db->prepare("SELECT * FROM members WHERE biometric_id = ? OR member_code = ? OR phone = ? OR id = ?");
-    $stmt->execute([$bioId, $bioId, $bioId, intval($bioId)]);
+    $memSql = "
+        SELECT * FROM members 
+        WHERE biometric_id IN ({$inPlaceholders}) 
+           OR member_code IN ({$inPlaceholders}) 
+           OR phone = ? 
+           OR id = ? 
+        LIMIT 1
+    ";
+    $stmt = $db->prepare($memSql);
+    $memParams = array_merge($bioVariants, $bioVariants, [$bioId, $numericBio]);
+    $stmt->execute($memParams);
     $member = $stmt->fetch();
 
     if (!$member) {
