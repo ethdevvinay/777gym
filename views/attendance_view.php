@@ -1058,6 +1058,21 @@ function submitManualCheckin(e) {
   const memberId = formData.get('member_id');
   const reason = formData.get('reason');
 
+  if (!navigator.onLine) {
+    if (window.OfflineManager) {
+      window.OfflineManager.queueAttendance({
+        action: 'checkin',
+        member_id: memberId,
+        verification_method: 'manual',
+        notes: reason || 'Manual Check-in',
+        time: new Date().toISOString()
+      });
+      showToast('⚡ Check-In Saved Locally! (Offline Mode — Auto-syncs when online)', 'warning');
+      closeModal('manualCheckinModal');
+    }
+    return;
+  }
+
   fetch('api/attendance.php?action=checkin', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1070,12 +1085,37 @@ function submitManualCheckin(e) {
     setTimeout(() => location.reload(), 1000);
   })
   .catch(err => {
-    showToast('Failed to record manual check-in', 'danger');
+    if (window.OfflineManager) {
+      window.OfflineManager.queueAttendance({
+        action: 'checkin',
+        member_id: memberId,
+        verification_method: 'manual',
+        notes: reason || 'Manual Check-in',
+        time: new Date().toISOString()
+      });
+      showToast('⚡ Network Error — Check-In Saved Offline! (Will auto-sync)', 'warning');
+      closeModal('manualCheckinModal');
+    } else {
+      showToast('Failed to record manual check-in', 'danger');
+    }
   });
 }
 
 function checkoutMember(logId) {
   if (!confirm('Mark this member as checked out?')) return;
+
+  if (!navigator.onLine) {
+    if (window.OfflineManager) {
+      window.OfflineManager.queueAttendance({
+        action: 'checkout',
+        att_id: logId,
+        time: new Date().toISOString()
+      });
+      showToast('⚡ Check-Out Saved Locally! (Offline Mode — Auto-syncs when online)', 'warning');
+    }
+    return;
+  }
+
   fetch(`api/devices.php?action=manual_checkout&att_id=${logId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1090,11 +1130,37 @@ function checkoutMember(logId) {
       showToast(res.message || 'Checkout failed', 'danger');
     }
   })
-  .catch(() => showToast('Checkout request failed. Please try again.', 'danger'));
+  .catch(() => {
+    if (window.OfflineManager) {
+      window.OfflineManager.queueAttendance({
+        action: 'checkout',
+        att_id: logId,
+        time: new Date().toISOString()
+      });
+      showToast('⚡ Network Error — Checkout Saved Offline! (Will auto-sync)', 'warning');
+    } else {
+      showToast('Checkout request failed. Please try again.', 'danger');
+    }
+  });
 }
 
 function handleQRCheckin(code) {
   showToast('Scanning QR Code: ' + code, 'info');
+
+  if (!navigator.onLine) {
+    if (window.OfflineManager) {
+      window.OfflineManager.queueAttendance({
+        action: 'checkin',
+        member_code: code,
+        verification_method: 'qr',
+        notes: 'QR Gate Scan',
+        time: new Date().toISOString()
+      });
+      showToast('⚡ QR Check-In Saved Locally! (Offline Mode — Auto-syncs when online)', 'warning');
+    }
+    return;
+  }
+
   fetch('api/devices.php?action=webhook', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1106,7 +1172,18 @@ function handleQRCheckin(code) {
     setTimeout(() => location.reload(), 1200);
   })
   .catch(err => {
-    showToast('QR Verification request error', 'danger');
+    if (window.OfflineManager) {
+      window.OfflineManager.queueAttendance({
+        action: 'checkin',
+        member_code: code,
+        verification_method: 'qr',
+        notes: 'QR Gate Scan',
+        time: new Date().toISOString()
+      });
+      showToast('⚡ Network Error — QR Scan Saved Offline! (Will auto-sync)', 'warning');
+    } else {
+      showToast('QR Verification request error', 'danger');
+    }
   });
 }
 
