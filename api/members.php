@@ -48,7 +48,14 @@ if ($action === 'search') {
     try {
         $memberCode = generateMemberCode();
         if (empty($biometricId)) {
-            $biometricId = "BIO-" . rand(1000, 9999);
+            // Extract numeric digits from member code (e.g. M-1002 -> 1002) for machine compatibility
+            $numOnly = preg_replace('/[^0-9]/', '', $memberCode);
+            $biometricId = !empty($numOnly) ? $numOnly : strval(1000 + rand(1, 999));
+        } else {
+            $numClean = preg_replace('/[^0-9]/', '', $biometricId);
+            if (!empty($numClean)) {
+                $biometricId = $numClean;
+            }
         }
 
         $stmt = $db->prepare("
@@ -57,6 +64,21 @@ if ($action === 'search') {
         ");
         $stmt->execute([$memberCode, $name, $parentName, $phone, $phone, $email, $dob, $gender, $emergencyContact, $address, $biometricId, $notes]);
         $memberId = $db->lastInsertId();
+
+        // Auto-push user info to Biometric Machines
+        try {
+            $cleanName = substr(preg_replace('/[^a-zA-Z0-9 ]/', '', $name), 0, 24);
+            $devRows = $db->query("SELECT serial_no FROM devices WHERE status = 'ONLINE'")->fetchAll();
+            if (empty($devRows)) {
+                $devRows = $db->query("SELECT serial_no FROM devices LIMIT 5")->fetchAll();
+            }
+            foreach ($devRows as $d) {
+                $sNo = $d['serial_no'];
+                $cmdText = "DATA UPDATE USERINFO PIN={$biometricId}\tName={$cleanName}\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=1";
+                $db->prepare("INSERT INTO device_commands (device_serial, command_text, status) VALUES (?, ?, 'pending')")
+                   ->execute([$sNo, $cmdText]);
+            }
+        } catch (Exception $e) {}
 
         // Optional: Initial membership plan assignment
         $planId = intval($input['membership_type_id'] ?? 0);
@@ -148,6 +170,23 @@ if ($action === 'search') {
         WHERE id = ?
     ");
     $stmt->execute([$name, $phone, $phone, $email, $gender, $dob, $emergencyContact, $parentName, $biometricId, $status, $notes, $id]);
+
+    // Push update to devices if biometric_id is present
+    if (!empty($biometricId)) {
+        try {
+            $cleanName = substr(preg_replace('/[^a-zA-Z0-9 ]/', '', $name), 0, 24);
+            $cleanPin = preg_replace('/[^0-9]/', '', $biometricId);
+            if (!empty($cleanPin)) {
+                $devRows = $db->query("SELECT serial_no FROM devices")->fetchAll();
+                foreach ($devRows as $d) {
+                    $sNo = $d['serial_no'];
+                    $cmdText = "DATA UPDATE USERINFO PIN={$cleanPin}\tName={$cleanName}\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=1";
+                    $db->prepare("INSERT INTO device_commands (device_serial, command_text, status) VALUES (?, ?, 'pending')")
+                       ->execute([$sNo, $cmdText]);
+                }
+            }
+        } catch (Exception $e) {}
+    }
 
     logAuditAction(1, 'Update Member Profile', 'MEMBERS', null, ['id' => $id, 'name' => $name, 'phone' => $phone]);
 

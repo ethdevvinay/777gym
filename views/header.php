@@ -162,6 +162,80 @@
         </button>
       </div>
     </form>
+</div>
+</div>
+
+<!-- ========================================================= -->
+<!-- GLOBAL BIOMETRIC ENROLLMENT MODAL                        -->
+<!-- ========================================================= -->
+<div class="modal" id="biometricEnrollModal" style="display:none; z-index:1050; position:fixed; inset:0; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+  <div class="modal-overlay" onclick="closeBiometricEnrollModal()" style="position:absolute; inset:0;" aria-hidden="true"></div>
+  <div class="card" style="position:relative; z-index:10; background:var(--bg-surface, #fff); width:92%; max-width:480px; border-radius:18px; padding:1.5rem; box-shadow:var(--shadow-modal, 0 10px 25px rgba(0,0,0,0.2)); border:1px solid var(--border-color, #E5E7EB);">
+    
+    <!-- Modal Header -->
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color, #E5E7EB); padding-bottom:0.85rem; margin-bottom:1rem;">
+      <div style="display:flex; align-items:center; gap:0.6rem;">
+        <span style="font-size:1.6rem;">📟</span>
+        <div>
+          <h3 style="margin:0; font-size:1.15rem; font-weight:800; color:var(--text-primary, #111827);">Biometric Gate Enrollment</h3>
+          <p style="margin:0; font-size:0.75rem; color:var(--text-secondary, #6B7280);">eSSL X2008 &bull; Gate Machine Live Sync</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeBiometricEnrollModal()" style="background:none; border:none; font-size:1.25rem; cursor:pointer; color:var(--text-muted, #9CA3AF);">✕</button>
+    </div>
+
+    <!-- Member Info Card -->
+    <div style="background:var(--bg-surface-secondary, #F9FAFB); border:1px solid var(--border-color, #E5E7EB); border-radius:12px; padding:0.9rem; margin-bottom:1.1rem; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-size:0.72rem; text-transform:uppercase; font-weight:800; color:var(--text-muted, #6B7280); letter-spacing:0.04em;">Member Profile</div>
+        <div id="bioMemberName" style="font-size:1.05rem; font-weight:900; color:var(--text-primary, #111827); margin-top:2px;">—</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:0.72rem; text-transform:uppercase; font-weight:800; color:var(--text-muted, #6B7280); letter-spacing:0.04em;">Machine PIN</div>
+        <span id="bioMemberPin" style="display:inline-block; background:#EFF6FF; color:#2563EB; font-weight:900; font-family:var(--font-mono, monospace); font-size:1.1rem; padding:2px 10px; border-radius:8px; border:1px solid #BFDBFE;">—</span>
+      </div>
+    </div>
+
+    <!-- 5-Minute Window Notice -->
+    <div style="background:#FEF3C7; border:1px solid #FCD34D; border-radius:10px; padding:0.75rem 0.9rem; margin-bottom:1.1rem; display:flex; align-items:flex-start; gap:0.6rem;">
+      <span style="font-size:1.2rem;">⏱️</span>
+      <div style="font-size:0.78rem; color:#92400E; line-height:1.4;">
+        <strong>5-Minute Gate Window:</strong> Member profile is auto-synced to the gate terminal. Ask the member to walk to the machine to register their Fingerprint or Face.
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+      <button type="button" id="btnEnrollFp" onclick="sendBiometricCommand('fp')" class="btn btn-primary" style="padding:0.75rem 0.5rem; display:flex; flex-direction:column; align-items:center; gap:0.35rem; font-weight:800; border-radius:12px;">
+        <span style="font-size:1.4rem;">👆</span>
+        <span style="font-size:0.82rem;">Enroll Fingerprint</span>
+      </button>
+
+      <button type="button" id="btnEnrollFace" onclick="sendBiometricCommand('face')" class="btn" style="background:#0284C7; color:#fff; padding:0.75rem 0.5rem; display:flex; flex-direction:column; align-items:center; gap:0.35rem; font-weight:800; border-radius:12px; border:none;">
+        <span style="font-size:1.4rem;">👤</span>
+        <span style="font-size:0.82rem;">Enroll Face</span>
+      </button>
+    </div>
+
+    <!-- Live Status Box -->
+    <div id="bioStatusBox" style="display:none; padding:0.75rem 0.9rem; border-radius:10px; font-size:0.8rem; margin-bottom:1rem;"></div>
+
+    <!-- Manual Keypad Instructions Accordion -->
+    <details style="background:var(--bg-surface-secondary, #F9FAFB); border:1px solid var(--border-color, #E5E7EB); border-radius:10px; padding:0.65rem 0.85rem; font-size:0.76rem; color:var(--text-secondary, #4B5563); margin-bottom:1rem;">
+      <summary style="cursor:pointer; font-weight:700; color:var(--text-primary, #111827);">💡 Direct Machine Option (Without Web Click)</summary>
+      <div style="margin-top:0.5rem; line-height:1.5;">
+        1. Member walks to machine ➡️ Press <strong>M/OK</strong> button on keypad.<br>
+        2. Select <strong>User Mgt</strong> ➡️ <strong>All Users</strong>.<br>
+        3. Member <strong id="bioManualName">—</strong> (PIN <strong id="bioManualPin">—</strong>) is already listed!<br>
+        4. Select User ➡️ Tap <strong>Fingerprint</strong> (touch 3 times) or <strong>Face</strong>.<br>
+        5. Press ESC to save. Attendance will instantly push live to the gym dashboard!
+      </div>
+    </details>
+
+    <!-- Modal Footer -->
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+      <button type="button" class="btn btn-secondary" style="border-radius:10px; font-weight:700; width:100%;" onclick="closeBiometricEnrollModal()">Done / Close</button>
+    </div>
   </div>
 </div>
 
@@ -778,15 +852,13 @@
           closeModal('newMemberModal');
           document.getElementById('newMemberForm').reset();
 
-          // Trigger automatic welcome WhatsApp message
-          const cleanPhone = payload.phone.replace(/[^0-9]/g, '');
-          const waPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-          const welcomeMsg = `🎉 *Welcome to THE CLUB 777®!* 🏋️‍♂️\n\nHello *${payload.name}*!\nYour Member ID is *${res.data.member_code || 'M-New'}*.\n\n📍 *Club Address:* Behind Shehnai Garden, Near Railway Station, Jhajjar - 124103\n📞 *Helpline:* 8053576777, 8053570777\n\n_We are thrilled to guide your fitness transformation!_ 💪`;
+          // Open Biometric Gate Enrollment Dialog directly!
+          const memberPin = res.data.biometric_id || res.data.id;
+          const memberName = res.data.name;
+          openBiometricModal(memberName, memberPin, false, false);
 
           if (typeof selectMember === 'function') {
             selectMember(res.data);
-          } else {
-            setTimeout(() => window.location.reload(), 1000);
           }
         } else {
           showToast(res.message || 'Registration failed', 'danger');
@@ -794,6 +866,98 @@
       })
       .catch(err => {
         showToast('Network error during member registration', 'danger');
+      });
+  }
+
+  /* ─── Global Biometric Enrollment Controller ─── */
+  let activeBioPin = '';
+  let activeBioName = '';
+  let bioPollTimer = null;
+
+  function openBiometricModal(name, pin, isFp, isFace) {
+    activeBioPin = String(pin || '').replace(/[^0-9]/g, '');
+    activeBioName = name || 'Member';
+
+    const nameEl = document.getElementById('bioMemberName');
+    const pinEl = document.getElementById('bioMemberPin');
+    const manualNameEl = document.getElementById('bioManualName');
+    const manualPinEl = document.getElementById('bioManualPin');
+
+    if (nameEl) nameEl.innerText = activeBioName;
+    if (pinEl) pinEl.innerText = activeBioPin || '—';
+    if (manualNameEl) manualNameEl.innerText = activeBioName;
+    if (manualPinEl) manualPinEl.innerText = activeBioPin || '—';
+
+    const statusBox = document.getElementById('bioStatusBox');
+    if (statusBox) {
+      statusBox.style.display = 'none';
+      statusBox.innerHTML = '';
+    }
+
+    const modal = document.getElementById('biometricEnrollModal');
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  }
+
+  function closeBiometricEnrollModal() {
+    if (bioPollTimer) clearInterval(bioPollTimer);
+    const modal = document.getElementById('biometricEnrollModal');
+    if (modal) modal.style.display = 'none';
+    if (window.location.search.includes('page=members') || window.location.search.includes('page=attendance')) {
+      window.location.reload();
+    }
+  }
+
+  function sendBiometricCommand(type) {
+    if (!activeBioPin) {
+      showToast('Invalid Biometric PIN', 'warning');
+      return;
+    }
+
+    const action = (type === 'face') ? 'enroll_face' : 'enroll_fp';
+    const label = (type === 'face') ? 'Face' : 'Fingerprint';
+    const statusBox = document.getElementById('bioStatusBox');
+
+    if (statusBox) {
+      statusBox.style.display = 'block';
+      statusBox.style.background = '#EFF6FF';
+      statusBox.style.border = '1px solid #BFDBFE';
+      statusBox.style.color = '#1E40AF';
+      statusBox.innerHTML = `<strong>⏳ Connecting to Machine...</strong><br>Sending ${label} enrollment command for User #${activeBioPin}.`;
+    }
+
+    fetch(`api/device_commands.php?action=${action}&pin=${activeBioPin}`, { method: 'POST' })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success) {
+          if (statusBox) {
+            statusBox.style.background = '#ECFDF5';
+            statusBox.style.border = '1px solid #A7F3D0';
+            statusBox.style.color = '#065F46';
+            statusBox.innerHTML = `
+              <strong>📡 Machine Ready &amp; Waiting!</strong><br>
+              ${type === 'face' ? '👤 Ask member to look at the machine camera.' : '👆 Ask member to place their finger on the sensor 3 times.'}<br>
+              <span style="font-size:0.75rem; color:#047857; margin-top:4px; display:inline-block;">⏱️ Member has 5 minutes at the gate machine.</span>
+            `;
+          }
+          showToast(`Machine ready! Ask member to touch scanner.`, 'success');
+        } else {
+          if (statusBox) {
+            statusBox.style.background = '#FEF2F2';
+            statusBox.style.border = '1px solid #FECACA';
+            statusBox.style.color = '#991B1B';
+            statusBox.innerHTML = `<strong>⚠️ Command Error:</strong> ${res.message || 'Could not queue command'}`;
+          }
+        }
+      })
+      .catch(err => {
+        if (statusBox) {
+          statusBox.style.background = '#FEF2F2';
+          statusBox.style.border = '1px solid #FECACA';
+          statusBox.style.color = '#991B1B';
+          statusBox.innerHTML = `<strong>⚠️ Network error:</strong> Could not reach device API`;
+        }
       });
   }
 </script>

@@ -177,7 +177,12 @@ foreach ($members as $m) {
                       <span><?= htmlspecialchars($m['gender'] ?: 'Male') ?></span>
                       <?php if (!empty($m['biometric_id'])): ?>
                         <span>&bull;</span>
-                        <span class="badge badge-secondary" style="font-size:0.68rem; padding:1px 5px; font-weight:700;">📟 <?= htmlspecialchars($m['biometric_id']) ?></span>
+                        <span class="badge badge-secondary" style="font-size:0.68rem; padding:1px 5px; font-weight:700;">📟 PIN: <?= htmlspecialchars($m['biometric_id']) ?></span>
+                        <?php if (!empty($m['finger_enrolled']) || !empty($m['face_enrolled'])): ?>
+                          <span class="badge badge-success" style="font-size:0.68rem; padding:1px 5px; font-weight:800; background:#059669; color:#fff;">✓ Enrolled</span>
+                        <?php else: ?>
+                          <span class="badge badge-warning" style="font-size:0.68rem; padding:1px 5px; font-weight:700;">⏳ Bio Pending</span>
+                        <?php endif; ?>
                       <?php endif; ?>
                     </div>
                   </div>
@@ -209,8 +214,6 @@ foreach ($members as $m) {
                 <?php endif; ?>
               </td>
 
-
-
               <td>
                 <span class="badge badge-<?= ($st === 'active') ? 'success' : (($st === 'expired') ? 'danger' : 'warning') ?>" style="font-weight:800; font-size:0.72rem;">
                   ● <?= strtoupper($st) ?>
@@ -219,6 +222,9 @@ foreach ($members as $m) {
 
               <td>
                 <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-sm" style="font-size:0.74rem; padding:0.25rem 0.5rem; background:#4F46E5; color:#fff; border:none; font-weight:800;" onclick="openBiometricModal('<?= htmlspecialchars(addslashes($m['name'])) ?>', '<?= htmlspecialchars($m['biometric_id'] ?: $m['id']) ?>', <?= !empty($m['finger_enrolled']) ? 'true' : 'false' ?>, <?= !empty($m['face_enrolled']) ? 'true' : 'false' ?>)" title="Enroll Biometrics at Gate">
+                    📟 Bio
+                  </button>
                   <a href="index.php?page=member_profile&id=<?= $m['id'] ?>" class="btn btn-secondary btn-sm" style="font-size:0.74rem; padding:0.25rem 0.5rem;" title="View 360° Profile">
                     👁️ 360°
                   </a>
