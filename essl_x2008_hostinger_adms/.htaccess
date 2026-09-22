@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# eSSL ADMS endpoints
+RewriteRule ^iclock/cdata/?$ iclock/adms.php?route=cdata [QSA,L]
+RewriteRule ^iclock/getrequest/?$ iclock/adms.php?route=getrequest [QSA,L]
+
+# Optional JSON attendance API
+RewriteRule ^api/attendance/?$ api/attendance.php [QSA,L]
