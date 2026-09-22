@@ -11,8 +11,9 @@ whatsapp_gateway/auth_info/
 whatsapp_gateway/*.log
 baileys_store.json
 
-# OS generated files
+# OS & Archives
 .DS_Store
 Thumbs.db
 desktop.ini
 *.tmp
+*.zip
