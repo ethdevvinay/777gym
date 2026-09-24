@@ -28,11 +28,11 @@ $rawInput = file_get_contents('php://input');
 $db = getDB();
 
 // ── 1. Extract Query Parameters ──────────────────────────────────────────────
-$sn        = trim($_GET['SN'] ?? $_GET['sn'] ?? '');
-$table     = strtoupper(trim($_GET['table'] ?? ''));
-$options   = trim($_GET['options'] ?? '');
-$pushver   = trim($_GET['pushver'] ?? '');
-$method    = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$sn = trim($_GET['SN'] ?? $_GET['sn'] ?? '');
+$table = strtoupper(trim($_GET['table'] ?? ''));
+$options = trim($_GET['options'] ?? '');
+$pushver = trim($_GET['pushver'] ?? '');
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 // ── 2. Update Device Status / Auto-Register ──────────────────────────────────
 $deviceId = 1;
@@ -59,11 +59,14 @@ if (!empty($sn)) {
 }
 
 // ── 3. Helper: Send WhatsApp Notification Fast ───────────────────────────────
-function sendFastWhatsApp(string $phone, string $message): void {
-    if (empty($phone)) return;
+function sendFastWhatsApp(string $phone, string $message): void
+{
+    if (empty($phone))
+        return;
     $nodeUrl = getSetting('whatsapp_node_url', 'http://127.0.0.1:3001');
     $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-    if (strlen($cleanPhone) === 10) $cleanPhone = '91' . $cleanPhone;
+    if (strlen($cleanPhone) === 10)
+        $cleanPhone = '91' . $cleanPhone;
 
     $ch = curl_init(rtrim($nodeUrl, '/') . '/send');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -86,7 +89,7 @@ if ($method === 'GET') {
     // If device is requesting server config/options
     if (!empty($options) || !empty($sn)) {
         // Standard ADMS initialization handshake response
-        $response  = "GET_OPTION_FROM: {$sn}\n";
+        $response = "GET_OPTION_FROM: {$sn}\n";
         $response .= "Stamp=0\n"; // 0 tells machine to push all pending punches
         $response .= "OpStamp=0\n";
         $response .= "PhotoStamp=0\n";
@@ -98,7 +101,7 @@ if ($method === 'GET') {
         $response .= "Realtime=1\n"; // Enable instant punch push
         $response .= "Encrypt=0\n";
         $response .= "ServerVersion=3.1.1\n";
-        
+
         echo $response;
         exit;
     }
@@ -128,7 +131,8 @@ if ($method === 'POST') {
 
         foreach ($lines as $line) {
             $line = trim($line);
-            if (empty($line)) continue;
+            if (empty($line))
+                continue;
 
             // Skip header lines like "PIN\tTime\t..."
             if (stripos($line, 'PIN') !== false || stripos($line, 'USER') !== false) {
@@ -143,7 +147,8 @@ if ($method === 'POST') {
                 $parts = explode(' ', $line);
             }
 
-            if (empty($parts[0])) continue;
+            if (empty($parts[0]))
+                continue;
 
             $pin = trim($parts[0]);
 
@@ -227,7 +232,7 @@ if ($method === 'POST') {
                 $staff = $staffStmt->fetch();
 
                 if ($staff) {
-                    $today   = date('Y-m-d', strtotime($punchTime));
+                    $today = date('Y-m-d', strtotime($punchTime));
                     $shiftId = $staff['shift_id'] ?: 1;
                     $shiftStart = $staff['shift_start'] ?: '05:00:00';
 
@@ -238,16 +243,16 @@ if ($method === 'POST') {
                     if (!$existingAtt) {
                         // Staff First Punch = CHECK-IN
                         $shiftStartTs = strtotime("{$today} {$shiftStart}");
-                        $graceMins    = intval($staff['grace_period_mins'] ?? 15);
-                        $graceTs      = $shiftStartTs + ($graceMins * 60);
-                        $status       = 'present';
-                        $lateMins     = 0;
-                        $lateReason   = null;
+                        $graceMins = intval($staff['grace_period_mins'] ?? 15);
+                        $graceTs = $shiftStartTs + ($graceMins * 60);
+                        $status = 'present';
+                        $lateMins = 0;
+                        $lateReason = null;
 
                         $punchTs = strtotime($punchTime);
                         if ($punchTs > $graceTs) {
-                            $lateMins   = max(1, (int) ceil(($punchTs - $shiftStartTs) / 60));
-                            $status     = ($lateMins > intval($staff['half_day_threshold_mins'] ?? 60)) ? 'half_day' : 'late';
+                            $lateMins = max(1, (int) ceil(($punchTs - $shiftStartTs) / 60));
+                            $status = ($lateMins > intval($staff['half_day_threshold_mins'] ?? 60)) ? 'half_day' : 'late';
                             $lateReason = "Late by {$lateMins} mins (Grace: {$graceMins}m)";
                         }
 
@@ -263,7 +268,7 @@ if ($method === 'POST') {
                         // Staff Second Punch = CHECK-OUT
                         $workHours = round(max(0, (strtotime($punchTime) - strtotime($existingAtt['check_in_time'])) / 3600), 2);
                         $db->prepare("UPDATE staff_attendance SET check_out_time = ?, working_hours = ? WHERE id = ?")
-                           ->execute([$punchTime, $workHours, $existingAtt['id']]);
+                            ->execute([$punchTime, $workHours, $existingAtt['id']]);
 
                         $processedCount++;
                         continue;
@@ -281,7 +286,8 @@ if ($method === 'POST') {
                         INSERT INTO biometric_transactions (device_serial, biometric_user_id, entity_type, entity_id, punch_time, verify_type, raw_payload) 
                         VALUES (?, ?, 'unknown', NULL, ?, ?, ?)
                     ")->execute([$sn, $pin, $punchTime, $verifyMethod, $line]);
-                } catch (Exception $e) {}
+                } catch (Exception $e) {
+                }
 
                 // Log Unregistered Punch for Admin review
                 try {
@@ -289,7 +295,8 @@ if ($method === 'POST') {
                         INSERT INTO unregistered_punches (biometric_id, device_serial, punch_time, raw_payload) 
                         VALUES (?, ?, ?, ?)
                     ")->execute([$pin, $sn, $punchTime, $line]);
-                } catch (Exception $e) {}
+                } catch (Exception $e) {
+                }
 
                 $processedCount++;
                 continue;
@@ -301,7 +308,8 @@ if ($method === 'POST') {
                     INSERT INTO biometric_transactions (device_serial, biometric_user_id, entity_type, entity_id, punch_time, verify_type, raw_payload) 
                     VALUES (?, ?, 'member', ?, ?, ?, ?)
                 ")->execute([$sn, $pin, $member['id'], $punchTime, $verifyMethod, $line]);
-            } catch (Exception $e) {}
+            } catch (Exception $e) {
+            }
 
             // ── C) DUPLICATE SCAN BUFFER CHECK ───────────────────────────────
             $dupChk = $db->prepare("SELECT id FROM attendance WHERE member_id = ? AND check_in_time >= DATE_SUB(?, INTERVAL ? MINUTE)");
@@ -322,14 +330,14 @@ if ($method === 'POST') {
             $activeSub = $subStmt->fetch();
 
             $memberStatus = 'success';
-            $memberNotes  = 'eSSL ADMS Face/Biometric Punch';
-            $isExpired    = false;
-            $daysLeft     = 0;
+            $memberNotes = 'eSSL ADMS Face/Biometric Punch';
+            $isExpired = false;
+            $daysLeft = 0;
 
             if (!$activeSub || strtotime($activeSub['end_date']) < strtotime(date('Y-m-d', strtotime($punchTime)))) {
                 $memberStatus = 'expired_alert';
-                $memberNotes  = 'Membership Expired — Access Flagged';
-                $isExpired    = true;
+                $memberNotes = 'Membership Expired — Access Flagged';
+                $isExpired = true;
             } else {
                 $daysLeft = max(0, (int) ceil((strtotime($activeSub['end_date']) - strtotime('today')) / 86400));
             }
