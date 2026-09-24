@@ -65,10 +65,22 @@ $event = $data['AccessControllerEvent'] ?? $data;
 $pin = trim($event['employeeNoString'] ?? ($event['serialNo'] ?? ($event['cardNo'] ?? '')));
 $devSerial = trim($event['deviceSerial'] ?? ($event['devSerial'] ?? ($data['macAddress'] ?? 'Hikvision-MinMoe')));
 $eventTime = !empty($event['time']) ? date('Y-m-d H:i:s', strtotime($event['time'])) : date('Y-m-d H:i:s');
-$cardType = strtolower(trim($event['cardType'] ?? 'face'));
+
+// Detect Verification Method (Face, Fingerprint, Card)
+$subEventType = intval($event['subEventType'] ?? 0);
+$cardTypeRaw  = strtolower(trim((string)($event['cardType'] ?? '')));
+
+$verifyMethod = 'face'; // Default for MinMoe
+if ($subEventType === 76 || stripos($cardTypeRaw, 'finger') !== false) {
+    $verifyMethod = 'biometric';
+} elseif ($subEventType === 1 || stripos($cardTypeRaw, 'card') !== false) {
+    $verifyMethod = 'rfid';
+} elseif ($subEventType === 75 || stripos($cardTypeRaw, 'face') !== false) {
+    $verifyMethod = 'face';
+}
 
 if (empty($pin)) {
-    // Hikvision heartbeat or non-access event (door opened manually, tamper, etc.)
+    // Hikvision heartbeat or non-user event (door opened manually, tamper alarm, etc.)
     http_response_code(200);
     echo json_encode(['status' => 'acknowledged', 'message' => 'Non-user or heartbeat event']);
     exit;
@@ -226,8 +238,8 @@ if ($member) {
         // CHECK-IN
         $db->prepare("
             INSERT INTO attendance (member_id, device_id, check_in_time, verification_method, status, notes) 
-            VALUES (?, ?, ?, 'face', ?, ?)
-        ")->execute([$member['id'], $deviceId, $eventTime, $memberStatus, $memberNotes]);
+            VALUES (?, ?, ?, ?, ?, ?)
+        ")->execute([$member['id'], $deviceId, $eventTime, $verifyMethod, $memberStatus, $memberNotes]);
 
         if (!empty($member['phone'])) {
             if ($isExpired) {
@@ -291,8 +303,8 @@ if ($staff) {
 
         $db->prepare("
             INSERT INTO staff_attendance (staff_id, date, shift_id, check_in_time, status, late_minutes, late_reason, verification_method, notes) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'face', 'Hikvision MinMoe Gate Punch')
-        ")->execute([$staff['id'], $today, $shiftId, $eventTime, $status, $lateMins, $lateReason]);
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Hikvision MinMoe Gate Punch')
+        ")->execute([$staff['id'], $today, $shiftId, $eventTime, $status, $lateMins, $lateReason, $verifyMethod]);
 
         http_response_code(200);
         echo json_encode(['status' => 'success', 'staff' => $staff['name'], 'action' => 'check_in']);
