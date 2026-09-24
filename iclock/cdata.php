@@ -196,80 +196,83 @@ if ($method === 'POST') {
             $inPlaceholders = implode(',', array_fill(0, count($pinVariants), '?'));
             $numericPin = intval($cleanPin);
 
-            // ── A) CHECK IF PIN MATCHES STAFF ────────────────────────────────
-            $staffSql = "
-                SELECT s.*, sh.name as shift_name, sh.start_time as shift_start, sh.end_time as shift_end,
-                       sh.grace_period_mins, sh.half_day_threshold_mins 
-                FROM staff s 
-                LEFT JOIN staff_shifts sh ON s.shift_id = sh.id 
-                WHERE s.biometric_id IN ({$inPlaceholders}) OR s.phone = ? OR s.id = ?
-                LIMIT 1
-            ";
-            $staffStmt = $db->prepare($staffSql);
-            $staffParams = array_merge($pinVariants, [$pin, $numericPin]);
-            $staffStmt->execute($staffParams);
-            $staff = $staffStmt->fetch();
-
-            if ($staff) {
-                $today   = date('Y-m-d', strtotime($punchTime));
-                $shiftId = $staff['shift_id'] ?: 1;
-                $shiftStart = $staff['shift_start'] ?: '05:00:00';
-
-                $attStmt = $db->prepare("SELECT * FROM staff_attendance WHERE staff_id = ? AND date = ? ORDER BY id DESC LIMIT 1");
-                $attStmt->execute([$staff['id'], $today]);
-                $existingAtt = $attStmt->fetch();
-
-                if (!$existingAtt) {
-                    // Staff First Punch = CHECK-IN
-                    $shiftStartTs = strtotime("{$today} {$shiftStart}");
-                    $graceMins    = intval($staff['grace_period_mins'] ?? 15);
-                    $graceTs      = $shiftStartTs + ($graceMins * 60);
-                    $status       = 'present';
-                    $lateMins     = 0;
-                    $lateReason   = null;
-
-                    $punchTs = strtotime($punchTime);
-                    if ($punchTs > $graceTs) {
-                        $lateMins   = max(1, (int) ceil(($punchTs - $shiftStartTs) / 60));
-                        $status     = ($lateMins > intval($staff['half_day_threshold_mins'] ?? 60)) ? 'half_day' : 'late';
-                        $lateReason = "Late by {$lateMins} mins (Grace: {$graceMins}m)";
-                    }
-
-                    $db->prepare("
-                        INSERT INTO staff_attendance (staff_id, date, shift_id, check_in_time, status, late_minutes, late_reason, verification_method, notes) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'eSSL ADMS Gate Punch')
-                    ")->execute([$staff['id'], $today, $shiftId, $punchTime, $status, $lateMins, $lateReason, $verifyMethod]);
-
-                    $processedCount++;
-                    continue;
-
-                } elseif (empty($existingAtt['check_out_time'])) {
-                    // Staff Second Punch = CHECK-OUT
-                    $workHours = round(max(0, (strtotime($punchTime) - strtotime($existingAtt['check_in_time'])) / 3600), 2);
-                    $db->prepare("UPDATE staff_attendance SET check_out_time = ?, working_hours = ? WHERE id = ?")
-                       ->execute([$punchTime, $workHours, $existingAtt['id']]);
-
-                    $processedCount++;
-                    continue;
-                } else {
-                    $processedCount++;
-                    continue;
-                }
-            }
-
-            // ── B) CHECK IF PIN MATCHES GYM MEMBER ───────────────────────────
+            // ── A) CHECK IF PIN MATCHES GYM MEMBER FIRST ────────────────────
             $memSql = "
                 SELECT * FROM members 
                 WHERE biometric_id IN ({$inPlaceholders}) 
                    OR member_code IN ({$inPlaceholders}) 
                    OR phone = ? 
-                   OR id = ? 
+                   OR (id = ? AND (biometric_id IS NULL OR biometric_id = '' OR biometric_id = ?))
                 LIMIT 1
             ";
             $memStmt = $db->prepare($memSql);
-            $memParams = array_merge($pinVariants, $pinVariants, [$pin, $numericPin]);
+            $memParams = array_merge($pinVariants, $pinVariants, [$pin, $numericPin, $pin]);
             $memStmt->execute($memParams);
             $member = $memStmt->fetch();
+
+            if (!$member) {
+                // ── B) CHECK IF PIN MATCHES STAFF ────────────────────────────
+                $staffSql = "
+                    SELECT s.*, sh.name as shift_name, sh.start_time as shift_start, sh.end_time as shift_end,
+                           sh.grace_period_mins, sh.half_day_threshold_mins 
+                    FROM staff s 
+                    LEFT JOIN staff_shifts sh ON s.shift_id = sh.id 
+                    WHERE s.biometric_id IN ({$inPlaceholders}) 
+                       OR s.phone = ?
+                    LIMIT 1
+                ";
+                $staffStmt = $db->prepare($staffSql);
+                $staffParams = array_merge($pinVariants, [$pin]);
+                $staffStmt->execute($staffParams);
+                $staff = $staffStmt->fetch();
+
+                if ($staff) {
+                    $today   = date('Y-m-d', strtotime($punchTime));
+                    $shiftId = $staff['shift_id'] ?: 1;
+                    $shiftStart = $staff['shift_start'] ?: '05:00:00';
+
+                    $attStmt = $db->prepare("SELECT * FROM staff_attendance WHERE staff_id = ? AND date = ? ORDER BY id DESC LIMIT 1");
+                    $attStmt->execute([$staff['id'], $today]);
+                    $existingAtt = $attStmt->fetch();
+
+                    if (!$existingAtt) {
+                        // Staff First Punch = CHECK-IN
+                        $shiftStartTs = strtotime("{$today} {$shiftStart}");
+                        $graceMins    = intval($staff['grace_period_mins'] ?? 15);
+                        $graceTs      = $shiftStartTs + ($graceMins * 60);
+                        $status       = 'present';
+                        $lateMins     = 0;
+                        $lateReason   = null;
+
+                        $punchTs = strtotime($punchTime);
+                        if ($punchTs > $graceTs) {
+                            $lateMins   = max(1, (int) ceil(($punchTs - $shiftStartTs) / 60));
+                            $status     = ($lateMins > intval($staff['half_day_threshold_mins'] ?? 60)) ? 'half_day' : 'late';
+                            $lateReason = "Late by {$lateMins} mins (Grace: {$graceMins}m)";
+                        }
+
+                        $db->prepare("
+                            INSERT INTO staff_attendance (staff_id, date, shift_id, check_in_time, status, late_minutes, late_reason, verification_method, notes) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'eSSL ADMS Gate Punch')
+                        ")->execute([$staff['id'], $today, $shiftId, $punchTime, $status, $lateMins, $lateReason, $verifyMethod]);
+
+                        $processedCount++;
+                        continue;
+
+                    } elseif (empty($existingAtt['check_out_time'])) {
+                        // Staff Second Punch = CHECK-OUT
+                        $workHours = round(max(0, (strtotime($punchTime) - strtotime($existingAtt['check_in_time'])) / 3600), 2);
+                        $db->prepare("UPDATE staff_attendance SET check_out_time = ?, working_hours = ? WHERE id = ?")
+                           ->execute([$punchTime, $workHours, $existingAtt['id']]);
+
+                        $processedCount++;
+                        continue;
+                    } else {
+                        $processedCount++;
+                        continue;
+                    }
+                }
+            }
 
             if (!$member) {
                 // Log to Raw Biometric Transactions Audit
